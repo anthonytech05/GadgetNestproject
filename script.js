@@ -305,30 +305,45 @@ function checkout() {
     ? `\n🏷️ Promo discount (20%): -₦${discount.toLocaleString()}`
     : "";
 
+  /* Order date */
+  const orderDate = new Date().toLocaleDateString("en-NG", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  });
+
   /* Full WhatsApp message */
   const message =
     `Hello GadgetNest! 👋\n` +
     `I'd like to place an order from your website.\n\n` +
+    `📅 *Date:* ${orderDate}\n\n` +
     `🛒 *MY ORDER*\n` +
     `${divider}\n\n` +
     `${itemLines}\n\n` +
     `${divider}\n` +
-    `📦 Total items ordered: *${itemCount}*\n` +
+    `📦 Total items: *${itemCount}*\n` +
     `💰 Subtotal: ₦${subtotal.toLocaleString()}` +
     promoLine + `\n` +
     `🚚 Delivery: *FREE*\n` +
     `✅ *TOTAL TO PAY: ₦${finalTotal.toLocaleString()}*\n` +
     `${divider}\n\n` +
-    `Kindly confirm availability and let me know the next steps for payment and delivery. Thank you! 🙏`;
+    `Kindly confirm availability and share payment & delivery details. Thank you! 🙏`;
 
-  const whatsappURL = `https://wa.me/2348027626795?text=${encodeURIComponent(message)}`;
+  const encoded     = encodeURIComponent(message);
+  /* Detect mobile — on mobile, deep-link opens WhatsApp app directly */
+  const isMobile    = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+  const webURL      = `https://wa.me/2348027626795?text=${encoded}`;
+  const appURL      = `whatsapp://send?phone=2348027626795&text=${encoded}`;
 
   showToast(`📲 Opening WhatsApp with your order…`);
 
   setTimeout(() => {
-    window.open(whatsappURL, "_blank");
-
-    /* Reset cart after redirect */
+    if (isMobile) {
+      /* Try app deep-link first; fallback to web if WhatsApp not installed */
+      window.location.href = appURL;
+      setTimeout(() => { window.open(webURL, "_blank"); }, 1500);
+    } else {
+      window.open(webURL, "_blank");
+    }
+    /* Reset cart */
     cart         = [];
     promoApplied = false;
     saveCart();
@@ -544,6 +559,12 @@ function initScrollReveal() {
     .hamburger.active span:nth-child(2) { opacity: 0; }
     .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
     .hamburger span { display: block; transition: transform 0.3s, opacity 0.3s; }
+
+    /* ── Product card text always white ── */
+    .role .text, .role .brand, .role .star,
+    .role .naira, .role .cancel, .role .collection { color: #ffffff !important; }
+    .role .cancel { opacity: 0.55; text-decoration: line-through; }
+    .role .naira  { font-weight: 700; }
   `;
   document.head.appendChild(style);
 }
@@ -577,7 +598,21 @@ function initYear() {
   if (el) el.textContent = new Date().getFullYear();
 }
 
-/* ─── 22. BOOT ─────────────────────────────────────── */
+/* ─── 22. VIEW COLLECTIONS BUTTON ───────────────────── */
+function initViewCollections() {
+  /* Wire every element that says "View Collections" to scroll to #products */
+  document.querySelectorAll("a, button").forEach((el) => {
+    if (el.textContent.trim().toLowerCase().includes("view collections")) {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = document.getElementById("products");
+        if (target) target.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+  });
+}
+
+/* ─── 23. BOOT ─────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   initYear();
   renderProducts();
@@ -587,4 +622,5 @@ document.addEventListener("DOMContentLoaded", () => {
   initScrollReveal();
   initStickyNav();
   initSmoothScroll();
+  initViewCollections();
 });
