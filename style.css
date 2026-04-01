@@ -3121,7 +3121,7 @@ footer::before {
 
   /* HERO */
   .hero-section { padding: 88px 20px 56px; gap: 40px; }
-  .hero-content h1 { font-size: 32px; line-height: 1.5; }
+  .hero-content h1 { font-size: 32px; line-height: 1.7; }
   .hero-content p { font-size: 15px; font-weight: 600; }
   .btn-primary, .btn-secondary { font-size: 14px; padding: 13px 24px; }
   .hero-stats { gap: 20px; }
@@ -3149,7 +3149,11 @@ footer::before {
 
   /* PRODUCTS */
   .product-section { padding: 64px 20px; }
-  .product-section .section-title { font-size: 30px; }
+  .product-section .section-title { 
+    font-size: 30px;
+    line-height: 1.7; 
+  }
+
   .filter-tabs { gap: 8px; }
   .filter-tab { font-size: 13px; font-weight: 600; padding: 8px 16px; }
   .radio { grid-template-columns: repeat(2, 1fr); gap: 12px; }
