@@ -1,8 +1,8 @@
 /* =====================================================
    GADGETNEST — script.js
    Features: Cart, Filter, Countdown, Newsletter,
-             Hamburger Nav, Marquee, Scroll Reveal,
-             Promo Code, Auto Year
+             Hamburger Nav, Scroll Reveal,
+             Promo Code, Auto Year, WhatsApp Checkout
    ===================================================== */
 
 /* ─── 1. PRODUCT DATA ─────────────────────────────── */
@@ -175,19 +175,19 @@ function updateCartUI() {
   document.getElementById("cartHeaderCount").textContent =
     totalQty === 1 ? "1 item" : `${totalQty} items`;
 
-  const cartEmpty = document.getElementById("cartEmpty");
-  const cartItems = document.getElementById("cartItems");
+  const cartEmpty  = document.getElementById("cartEmpty");
+  const cartItems  = document.getElementById("cartItems");
   const cartFooter = document.getElementById("cartFooter");
 
   if (cart.length === 0) {
-    cartEmpty.style.display = "flex";
-    cartItems.style.display = "none";
+    cartEmpty.style.display  = "flex";
+    cartItems.style.display  = "none";
     cartFooter.style.display = "none";
     return;
   }
 
-  cartEmpty.style.display = "none";
-  cartItems.style.display = "block";
+  cartEmpty.style.display  = "none";
+  cartItems.style.display  = "block";
   cartFooter.style.display = "block";
 
   cartItems.innerHTML = cart
@@ -236,7 +236,7 @@ function removeFromCart(productId) {
 /* ─── 9. CLEAR CART ───────────────────────────────── */
 function clearCart() {
   if (!confirm("Clear all items from your cart?")) return;
-  cart = [];
+  cart         = [];
   promoApplied = false;
   saveCart();
   updateCartUI();
@@ -246,10 +246,10 @@ function clearCart() {
 function updateTotals() {
   const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
   const discount = promoApplied ? subtotal * 0.2 : 0;
-  const total = subtotal - discount;
+  const total    = subtotal - discount;
 
   document.getElementById("cartSubtotal").textContent = `₦${subtotal.toLocaleString()}`;
-  document.getElementById("cartTotal").textContent = `₦${total.toLocaleString()}`;
+  document.getElementById("cartTotal").textContent    = `₦${total.toLocaleString()}`;
 
   const discountRow = document.getElementById("discountRow");
   if (promoApplied) {
@@ -262,7 +262,7 @@ function updateTotals() {
 
 /* ─── 11. PROMO CODE ──────────────────────────────── */
 function applyPromo() {
-  const code = document.getElementById("promoInput").value.trim().toUpperCase();
+  const code  = document.getElementById("promoInput").value.trim().toUpperCase();
   const valid = ["VAULT20", "NEST20", "GADGET20"];
 
   if (promoApplied) {
@@ -279,29 +279,62 @@ function applyPromo() {
   }
 }
 
-/* ─── 12. CHECKOUT ────────────────────────────────── */
+/* ─── 12. CHECKOUT → WHATSAPP DM ──────────────────── */
 function checkout() {
   if (cart.length === 0) return;
 
-  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const discount = promoApplied ? total * 0.2 : 0;
-  const finalTotal = total - discount;
+  /* Calculate totals */
+  const subtotal   = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const discount   = promoApplied ? subtotal * 0.2 : 0;
+  const finalTotal = subtotal - discount;
+  const itemCount  = cart.reduce((sum, i) => sum + i.qty, 0);
+  const divider    = "━━━━━━━━━━━━━━━━━━━━━━";
 
-  showToast(`🛍️ Order placed! Total: ₦${finalTotal.toLocaleString()}. Redirecting to WhatsApp…`);
+  /* Build each product line */
+  const itemLines = cart
+    .map(
+      (item, i) =>
+        `${i + 1}. *${item.name}*\n` +
+        `   Category: ${item.brand}\n` +
+        `   Qty: ${item.qty} × ₦${item.price.toLocaleString()} = ₦${(item.price * item.qty).toLocaleString()}`
+    )
+    .join("\n\n");
 
-  const itemsList = cart
-    .map((i) => `• ${i.name} x${i.qty} — ₦${(i.price * i.qty).toLocaleString()}`)
-    .join("%0A");
-  const msg = `Hello GadgetNest! 👋%0A%0AI'd like to order:%0A${itemsList}%0A%0ATotal: ₦${finalTotal.toLocaleString()}${promoApplied ? "%0APromo applied: 20% off" : ""}`;
+  /* Promo line (only shown if applied) */
+  const promoLine = promoApplied
+    ? `\n🏷️ Promo discount (20%): -₦${discount.toLocaleString()}`
+    : "";
+
+  /* Full WhatsApp message */
+  const message =
+    `Hello GadgetNest! 👋\n` +
+    `I'd like to place an order from your website.\n\n` +
+    `🛒 *MY ORDER*\n` +
+    `${divider}\n\n` +
+    `${itemLines}\n\n` +
+    `${divider}\n` +
+    `📦 Total items ordered: *${itemCount}*\n` +
+    `💰 Subtotal: ₦${subtotal.toLocaleString()}` +
+    promoLine + `\n` +
+    `🚚 Delivery: *FREE*\n` +
+    `✅ *TOTAL TO PAY: ₦${finalTotal.toLocaleString()}*\n` +
+    `${divider}\n\n` +
+    `Kindly confirm availability and let me know the next steps for payment and delivery. Thank you! 🙏`;
+
+  const whatsappURL = `https://wa.me/2348027626795?text=${encodeURIComponent(message)}`;
+
+  showToast(`📲 Opening WhatsApp with your order…`);
 
   setTimeout(() => {
-    window.open(`https://wa.me/2348027626795?text=${msg}`, "_blank");
-    cart = [];
+    window.open(whatsappURL, "_blank");
+
+    /* Reset cart after redirect */
+    cart         = [];
     promoApplied = false;
     saveCart();
     updateCartUI();
     closeCart();
-  }, 1500);
+  }, 1200);
 }
 
 /* ─── 13. OPEN / CLOSE CART ───────────────────────── */
@@ -321,25 +354,27 @@ function closeCart() {
 function showToast(message, type = "success") {
   let toast = document.getElementById("gnToast");
   if (!toast) {
-    toast = document.createElement("div");
+    toast    = document.createElement("div");
     toast.id = "gnToast";
     document.body.appendChild(toast);
   }
 
   const colors = {
     success: "linear-gradient(135deg,#4ade80,#22c55e)",
-    warn: "linear-gradient(135deg,#fbbf24,#f59e0b)",
-    error: "linear-gradient(135deg,#f87171,#ef4444)",
+    warn:    "linear-gradient(135deg,#fbbf24,#f59e0b)",
+    error:   "linear-gradient(135deg,#f87171,#ef4444)",
   };
 
   toast.style.cssText = `
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px);
-    background:${colors[type]}; color:#fff; padding:14px 24px; border-radius:12px;
-    font-size:0.95rem; font-weight:600; z-index:9999; box-shadow:0 8px 32px rgba(0,0,0,.3);
+    position:fixed; bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(100px);
+    background:${colors[type]}; color:#fff; padding:14px 24px;
+    border-radius:12px; font-size:0.95rem; font-weight:600;
+    z-index:9999; box-shadow:0 8px 32px rgba(0,0,0,.3);
     transition:transform 0.4s cubic-bezier(.34,1.56,.64,1), opacity 0.4s ease;
     white-space:nowrap; max-width:90vw; text-align:center;
   `;
-  toast.textContent = message;
+  toast.textContent   = message;
   toast.style.opacity = "1";
 
   requestAnimationFrame(() => {
@@ -349,7 +384,7 @@ function showToast(message, type = "success") {
   clearTimeout(toast._timer);
   toast._timer = setTimeout(() => {
     toast.style.transform = "translateX(-50%) translateY(100px)";
-    toast.style.opacity = "0";
+    toast.style.opacity   = "0";
   }, 3000);
 }
 
@@ -370,8 +405,8 @@ function subscribeNewsletter() {
 /* ─── 16. HAMBURGER / MOBILE NAV ──────────────────── */
 function initHamburger() {
   const hamburger = document.getElementById("hamburger");
-  const navLinks = document.querySelector(".nav-links");
-  const overlay = document.getElementById("mobileOverlay");
+  const navLinks  = document.querySelector(".nav-links");
+  const overlay   = document.getElementById("mobileOverlay");
   if (!hamburger) return;
 
   hamburger.addEventListener("click", () => {
@@ -382,7 +417,6 @@ function initHamburger() {
   });
 
   overlay.addEventListener("click", closeMenu);
-
   document.querySelectorAll(".nav-links a").forEach((link) => {
     link.addEventListener("click", closeMenu);
   });
@@ -398,7 +432,7 @@ function initHamburger() {
 /* ─── 17. COUNTDOWN TIMER ─────────────────────────── */
 function initCountdown() {
   const END_KEY = "gnCountdownEnd";
-  let endTime = localStorage.getItem(END_KEY);
+  let endTime   = localStorage.getItem(END_KEY);
 
   if (!endTime || Date.now() > Number(endTime)) {
     endTime = Date.now() + 4 * 60 * 60 * 1000 + 23 * 60 * 1000 + 59 * 1000;
@@ -416,15 +450,14 @@ function initCountdown() {
       return;
     }
 
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-
+    const h   = Math.floor(diff / 3600000);
+    const m   = Math.floor((diff % 3600000) / 60000);
+    const s   = Math.floor((diff % 60000) / 1000);
     const fmt = (n) => String(n).padStart(2, "0");
+
     const cdH = document.getElementById("cdH");
     const cdM = document.getElementById("cdM");
     const cdS = document.getElementById("cdS");
-
     if (cdH) cdH.textContent = fmt(h);
     if (cdM) cdM.textContent = fmt(m);
     if (cdS) cdS.textContent = fmt(s);
@@ -453,13 +486,13 @@ function initScrollReveal() {
   );
 
   targets.forEach((el) => {
-    el.style.opacity = "0";
-    el.style.transform = "translateY(32px)";
+    el.style.opacity    = "0";
+    el.style.transform  = "translateY(32px)";
     el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
     observer.observe(el);
   });
 
-  // Add .visible styles
+  /* Inject supporting styles */
   const style = document.createElement("style");
   style.textContent = `
     .role.visible, .frame.visible, .review-card.visible,
@@ -467,7 +500,6 @@ function initScrollReveal() {
       opacity: 1 !important;
       transform: translateY(0) !important;
     }
-    /* Cart item styles injected here for portability */
     .cart-item {
       display: flex; gap: 14px; padding: 14px 0;
       border-bottom: 1px solid rgba(255,255,255,0.07);
@@ -478,27 +510,25 @@ function initScrollReveal() {
       border: 1px solid rgba(255,255,255,0.1);
     }
     .cart-item-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-    .cart-item-name { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
+    .cart-item-name  { font-weight: 600; font-size: 0.9rem; line-height: 1.3; }
     .cart-item-brand { font-size: 0.78rem; opacity: 0.5; }
     .cart-item-price { font-size: 0.95rem; font-weight: 700; color: var(--sky, #38bdf8); }
     .cart-item-controls { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
     .qty-btn {
       width: 28px; height: 28px; border-radius: 50%; border: none;
-      background: rgba(255,255,255,0.1); color: inherit;
-      cursor: pointer; font-size: 1.1rem; display: flex;
-      align-items: center; justify-content: center;
-      transition: background 0.2s;
+      background: rgba(255,255,255,0.1); color: inherit; cursor: pointer;
+      font-size: 1.1rem; display: flex; align-items: center;
+      justify-content: center; transition: background 0.2s;
     }
     .qty-btn:hover { background: rgba(255,255,255,0.2); }
     .qty-display { font-weight: 700; min-width: 20px; text-align: center; }
     .remove-btn {
       margin-left: auto; background: none; border: none;
-      cursor: pointer; font-size: 1.1rem; opacity: 0.6;
-      transition: opacity 0.2s;
+      cursor: pointer; font-size: 1.1rem; opacity: 0.6; transition: opacity 0.2s;
     }
     .remove-btn:hover { opacity: 1; }
     .cart-items { padding: 0 4px; }
-    .cart-drawer.open { transform: translateX(0) !important; }
+    .cart-drawer.open  { transform: translateX(0) !important; }
     .cart-overlay.open { opacity: 1 !important; pointer-events: all !important; }
     .nav-links.open {
       display: flex !important; flex-direction: column;
@@ -507,9 +537,8 @@ function initScrollReveal() {
       z-index: 998; gap: 20px;
     }
     .mobile-overlay.open {
-      display: block !important; position: fixed;
-      inset: 0; z-index: 997;
-      background: rgba(0,0,0,0.6);
+      display: block !important; position: fixed; inset: 0;
+      z-index: 997; background: rgba(0,0,0,0.6);
     }
     .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
     .hamburger.active span:nth-child(2) { opacity: 0; }
@@ -529,7 +558,7 @@ function initStickyNav() {
   });
 }
 
-/* ─── 20. SMOOTH SCROLL FOR NAV LINKS ─────────────── */
+/* ─── 20. SMOOTH SCROLL ───────────────────────────── */
 function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener("click", (e) => {
@@ -548,10 +577,7 @@ function initYear() {
   if (el) el.textContent = new Date().getFullYear();
 }
 
-/* ─── 22. CART ITEM STYLES (inject via JS) ─────────── */
-// Already handled inside initScrollReveal style block above.
-
-/* ─── 23. BOOT ─────────────────────────────────────── */
+/* ─── 22. BOOT ─────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", () => {
   initYear();
   renderProducts();
